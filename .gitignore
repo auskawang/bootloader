@@ -1,0 +1,27 @@
+# --- Build Artifacts (covers both projects) ---
+**/Debug/
+**/Release/
+**/bin/
+**/obj/
+
+# --- Generated Binary Files ---
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+
+# --- Compiler/Toolchain Junk ---
+*.o
+*.d
+*.su
+*.bak
+
+# --- IDE Metadata ---
+# This ignores local preferences while keeping project structure
+**/.settings/
+**/.cache/
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
