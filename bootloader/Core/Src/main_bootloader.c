@@ -69,8 +69,11 @@
 #define USART2_BRR (USART2 + 0xC)
 #define USART2_ISR (USART2 + 0x1C)
 #define USART2_ISR_TXE_POS 7
-#define USART2_ISR_TXE_Msk (1U << 7)
+#define USART2_ISR_TXE_Msk (1U << USART2_ISR_TXE_POS)
+#define USART2_ISR_RXNE_POS 5
+#define USART2_ISR_RXNE_Msk (1U << USART2_ISR_RXNE_POS)
 #define USART2_TDR (USART2 + 0x28)
+#define USART2_RDR (USART2 + 0x24)
 
 
 #define SHPR3 0xE000ED20
@@ -93,7 +96,7 @@ int main() {
 										//program M bits in usart_cr1 (reset value)
 	*((int*)USART2_BRR) = 0x4E2; 		//9600 set baud rate (12000000 (input clock) / 9600 (desired baud)) p.762
 	*((int*)USART2_CR1) |= 0x1; 		//enable usart
-	*((int*)USART2_CR1) |= 0x8;			//enable usart transmitter
+	*((int*)USART2_CR1) |= 0xc;			//enable usart transmitter and receiver
 
 	*((int*)GPIOA_MODER) &= ~(0xF << 4);   // clear pa2, pa3  p187
 	*((int*)GPIOA_MODER) |=  (0xA << 4);   // AF mode pa2, pa3
@@ -104,6 +107,18 @@ int main() {
 	if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
 		*((int*)USART2_TDR) = 0x61;
 	}
+
+	uint8_t buffer[380];
+	uint8_t* temp = buffer;
+	for (int i = 0; i < 380; i++) {
+		while ((*((int*)USART2_ISR) & USART2_ISR_RXNE_Msk) == 0) {
+		}
+		*temp++ = *((uint8_t*)USART2_RDR);
+		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
+				*((int*)USART2_TDR) = 0x61;
+			}
+	}
+
 
 	__asm volatile ("cpsid i" : : : "memory");
 	//switch stack
