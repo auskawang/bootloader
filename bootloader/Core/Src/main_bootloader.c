@@ -12,6 +12,7 @@
 #define RCC_APBENR1_USART2EN_Msk    (1U << RCC_APBENR1_USART2EN_Pos)
 #define RCC_APBENR1_USART2EN        RCC_APBENR1_USART2EN_Msk
 
+#define RCC_AHBENR (RCC + 0x38)
 
 #define GPIOA 0x50000000
 #define GPIOA_MODER (GPIOA + 0x00)
@@ -80,9 +81,21 @@
 #define NVIC_IPR4 0xE000E410
 
 #define SCB_VTOR 0xE000ED08
+#define APP_FLASH_START (uint8_t*)0x08004000
+#define APP_FLASH_SIZE (1U << 14)
+#define FLASH 0x40022000
+#define FLASH_KEYR (FLASH + 0x008)
+#define FLASH_CR (FLASH + 0x014)
+#define FLASH_SR (FLASH + 0x010)
+#define KEY1 0x45670123
+#define KEY2 0xCDEF89AB
+
 
 extern void EXTI415_Callback();
 extern void TIM14_Callback();
+
+void app_flash_erase();
+void app_flash_write(uint8_t* buffer, int len);
 
 int main() {
 	//SysTick setup
@@ -107,6 +120,7 @@ int main() {
 	if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
 		*((int*)USART2_TDR) = 0x61;
 	}
+	app_flash_erase();
 
 	uint8_t buffer[380];
 	uint8_t* temp = buffer;
@@ -118,6 +132,8 @@ int main() {
 				*((int*)USART2_TDR) = 0x61;
 			}
 	}
+
+	app_flash_write(buffer, 380);
 
 
 	__asm volatile ("cpsid i" : : : "memory");
@@ -139,3 +155,79 @@ int main() {
 	return 1;
 }
 
+void app_flash_erase() {
+	//unlock flash
+	*(uint32_t*)FLASH_KEYR = KEY1;
+	*(uint32_t*)FLASH_KEYR = KEY2;
+
+	for (int page = 8; page < 15; page++) {
+		//BSYS1 flag not set
+		while (((*(int*)FLASH_SR) & 0x10000) == 1) {};
+
+		//clear all error programming flags
+		while (((*(int*)FLASH_SR) & 0x10) == 1) {};
+
+		//CFGBSY flag cleared
+		while (((*(int*)FLASH_SR) & 0x40000) == 1) {};
+
+		//enable page erase and select pages 8-15 to erase
+		*(int*)FLASH_CR |= 0x2;
+		*(int*)FLASH_CR &= ~(0x7F << 3);
+		*(int*)FLASH_CR |= (page << 3);
+
+		//start
+		*(int*)FLASH_CR |= 0x10000;
+
+		//wait for CFGBSY to clear
+		while (((*(int*)FLASH_SR) & 0x40000) == 1) {};
+	}
+	//disable PE
+	*(int*)FLASH_CR &= ~0x2;
+	//lock flash
+	*(uint32_t*)FLASH_CR |= (1U << 31);
+}
+
+void app_flash_write(uint8_t* buffer, int len) {
+	//unlock flash
+		*(uint32_t*)FLASH_KEYR = KEY1;
+		*(uint32_t*)FLASH_KEYR = KEY2;
+
+	//BSYS1 flag not set
+	while (((*(int*)FLASH_SR) & 0x10000) == 1) {};
+
+	//clear all error programming flags
+	while (((*(int*)FLASH_SR) & 0x10) == 1) {};
+
+	//CFGBSY flag cleared
+	while (((*(int*)FLASH_SR) & 0x40000) == 1) {};
+
+	//enable PG
+	*(int*)FLASH_CR |= 0x1;
+
+	uint32_t* flash_itr = APP_FLASH_START;
+	uint32_t* buffer_itr = (uint32_t*)buffer;
+	uint32_t* holder_top;
+
+	for (int i = 0; i < len / 4; i+=2) {
+		*(flash_itr + i) = *(buffer_itr + i);
+
+		if (i + 1 < len / 4)
+			*(flash_itr + i + 1) = *(buffer_itr + i + 1);
+		else
+			*(flash_itr + i + 1) = 0xFFFFFFFF;
+
+		//CFGBSY flag cleared
+		while (((*(int*)FLASH_SR) & 0x40000) == 1) {};
+
+		//clear EOP flag
+		*(int*)FLASH_SR |= 0x1;
+
+	}
+
+	//clear PG
+	*(int*)FLASH_CR &= ~0x1;
+
+	//lock flash
+		*(uint32_t*)FLASH_CR |= (1U << 31);
+
+}
