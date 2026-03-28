@@ -90,6 +90,11 @@
 #define KEY1 0x45670123
 #define KEY2 0xCDEF89AB
 
+#define CRC  0x40023000
+#define CRC_DR (CRC + 0x00)
+#define CRC_CR       (CRC + 0x08)
+#define CRC_INIT (CRC + 0x10)
+#define CRC_POL (CRC + 0x14)
 
 extern void EXTI415_Callback();
 extern void TIM14_Callback();
@@ -98,10 +103,20 @@ void app_flash_erase();
 void app_flash_write(uint8_t* buffer, int len);
 
 int main() {
+	uint32_t final_result = 0;
 	//SysTick setup
 	*((int*)STK_RVR) = 0x5DB;
 	*((int*)STK_CVR) = 1;
 	*((int*)STK_CSR) |= 0x3;
+
+	//enable CRC
+	*(int*)RCC_AHBENR |= (1U << 12);
+
+	*(volatile uint32_t*)CRC_CR = (1U << 0);
+
+
+
+	//final_result = (*(volatile uint32_t*)CRC_DR) ^ 0xFFFFFFFF;
 
 	//VCP USART2 setup
 	*((int*)RCC_IOPENR) = 0x1;
@@ -120,18 +135,35 @@ int main() {
 	if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
 		*((int*)USART2_TDR) = 0x61;
 	}
+
 	app_flash_erase();
 
 	uint8_t buffer[380];
 	uint8_t* temp = buffer;
 	for (int i = 0; i < 380; i++) {
-		while ((*((int*)USART2_ISR) & USART2_ISR_RXNE_Msk) == 0) {
-		}
+		while ((*((int*)USART2_ISR) & USART2_ISR_RXNE_Msk) == 0) {}
 		*temp++ = *((uint8_t*)USART2_RDR);
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-				*((int*)USART2_TDR) = 0x61;
-			}
+			*((int*)USART2_TDR) = 0x1;
+		}
 	}
+
+	int crc_val;
+	//check CRC
+	for (int i = 0; i < 380; i++) {
+		*(uint8_t*)CRC_DR = buffer[i];
+	}
+	crc_val = *(uint32_t*)CRC_DR;
+
+	uint8_t server_crc[4];
+
+	for (int i = 0; i < 4; i++) {
+		while ((*((int*)USART2_ISR) & USART2_ISR_RXNE_Msk) == 0) {}
+		server_crc[i] = *((uint8_t*)USART2_RDR);
+	}
+	int server_crc_calc = server_crc[0] << 24 | server_crc[1] << 16 | server_crc[2] << 8 | server_crc[3] << 0;
+	if (server_crc_calc != crc_val)
+		while(1) {}
 
 	app_flash_write(buffer, 380);
 
