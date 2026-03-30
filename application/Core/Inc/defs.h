@@ -1,4 +1,13 @@
-#include <stdint.h>
+/*
+ * defs.h
+ *
+ *  Created on: Mar 28, 2026
+ *      Author: auska
+ */
+
+#ifndef INC_DEFS_H_
+#define INC_DEFS_H_
+
 #define RCC 0x40021000
 #define RCC_CR (RCC)
 #define RCC_IOPENR (RCC + 0x34)
@@ -11,6 +20,8 @@
 #define RCC_APBENR1_USART2EN_Pos    (17U)
 #define RCC_APBENR1_USART2EN_Msk    (1U << RCC_APBENR1_USART2EN_Pos)
 #define RCC_APBENR1_USART2EN        RCC_APBENR1_USART2EN_Msk
+
+#define RCC_AHBENR (RCC + 0x38)
 
 #define GPIOA 0x50000000
 #define GPIOA_MODER (GPIOA + 0x00)
@@ -53,6 +64,8 @@
 #define TIM14_PSC (TIM14 + 0x28)
 #define TIM14_ARR (TIM14 + 0x2C)
 
+
+
 #define USART1 0x40013800
 #define USART1_CR1 (USART1 + 0x0)
 #define USART1_BRR (USART1 + 0xC)
@@ -66,24 +79,30 @@
 #define USART2_BRR (USART2 + 0xC)
 #define USART2_ISR (USART2 + 0x1C)
 #define USART2_ISR_TXE_POS 7
-#define USART2_ISR_TXE_Msk (1U << 7)
+#define USART2_ISR_TXE_Msk (1U << USART2_ISR_TXE_POS)
+#define USART2_ISR_RXNE_POS 5
+#define USART2_ISR_RXNE_Msk (1U << USART2_ISR_RXNE_POS)
 #define USART2_TDR (USART2 + 0x28)
+#define USART2_RDR (USART2 + 0x24)
+
 
 #define SHPR3 0xE000ED20
 #define NVIC_IPR4 0xE000E410
 
-extern void delay();
+#define SCB_VTOR 0xE000ED08
+#define APP_FLASH_START (uint8_t*)0x08004000
+#define APP_FLASH_SIZE (1U << 14)
+#define FLASH 0x40022000
+#define FLASH_KEYR (FLASH + 0x008)
+#define FLASH_CR (FLASH + 0x014)
+#define FLASH_SR (FLASH + 0x010)
+#define KEY1 0x45670123
+#define KEY2 0xCDEF89AB
 
-int main() {
-	__asm volatile ("cpsie i" : : : "memory");
+#define CRC  0x40023000
+#define CRC_DR (CRC + 0x00)
+#define CRC_CR       (CRC + 0x08)
+#define CRC_INIT (CRC + 0x10)
+#define CRC_POL (CRC + 0x14)
 
-	while(1) {
-		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-			*((int*)USART2_TDR) = 0x40;
-		}
-		delay(1000);
-	}
-
-	return 1;
-}
-
+#endif /* INC_DEFS_H_ */
