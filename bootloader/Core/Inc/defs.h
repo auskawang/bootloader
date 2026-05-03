@@ -109,4 +109,12 @@
 #define LED_PIN 5
 #define BUTTON_PIN 13
 
+#define HEX_A 0x61
+#define HEX_B 0x62
+#define HEX_R 0x52
+#define HEX_ACK 0x1
+
+#define SLOT_A_START 0x08004200
+#define SLOT_B_START 0x08006200
+
 #endif /* INC_DEFS_H_ */

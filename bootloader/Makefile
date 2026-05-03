@@ -24,12 +24,13 @@ $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
 # Compile main_bootloader.c
-main_bootloader.o: Core/Src/main_bootloader.c
+main_bootloader.o: Core/Src/main_bootloader.c Core/Inc/defs.h
 	$(CC) $(CFLAGS) $< -o $@
 
 # Compile startup_bootloader.c
-startup_bootloader.o: Core/Startup/startup_bootloader.c
+startup_bootloader.o: Core/Startup/startup_bootloader.c Core/Inc/defs.h
 	$(CC) $(CFLAGS) $< -o $@
+	
 
 clean:
-	del /f *.o *.elf *.map *.bin
+	del /Q *.o *.elf *.bin *.map 2>nul

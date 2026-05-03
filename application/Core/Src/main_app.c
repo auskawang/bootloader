@@ -73,13 +73,13 @@
 #define NVIC_IPR4 0xE000E410
 
 extern void delay();
-
+volatile const uint32_t x = 0xDEADBEEF;
 int main() {
-	__asm volatile ("cpsie i" : : : "memory");
+	asm volatile ("cpsie i" : : : "memory");
 
 	while(1) {
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-			*((int*)USART2_TDR) = 0x40;
+			*((int*)USART2_TDR) = 0x67;
 		}
 		delay(1000);
 	}
