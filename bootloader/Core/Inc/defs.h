@@ -114,7 +114,7 @@
 #define HEX_R 0x52
 #define HEX_ACK 0x1
 
-#define SLOT_A_START 0x08004200
-#define SLOT_B_START 0x08006200
+#define SLOT_A_START 0x08001200
+#define SLOT_B_START 0x08004A00
 
 #endif /* INC_DEFS_H_ */

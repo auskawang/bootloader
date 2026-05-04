@@ -2,7 +2,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
 	FLASH(rx):ORIGIN =_app_start,LENGTH =_flash_len
-	SRAM(rw):ORIGIN =0x20001800,LENGTH =6K
+	SRAM(rw):ORIGIN =0x20000400,LENGTH =0x2C00
 }
 SECTIONS
 {

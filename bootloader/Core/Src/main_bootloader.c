@@ -22,8 +22,8 @@ typedef struct {
 	int unused;
 } Slot;
 
-Slot* slot_a = (Slot*)0x08004000;
-Slot* slot_b = (Slot*)0x08006000;
+Slot* slot_a = (Slot*)0x08001000;
+Slot* slot_b = (Slot*)0x08004800;
 int crc_value;
 
 int main() {
@@ -150,8 +150,8 @@ int main() {
 }
 void jump_to_slot(int slot) {
 	uint32_t* app_stack_pointer;
-	if (slot == HEX_A) app_stack_pointer = (uint32_t*)0x08004200;
-	if (slot == HEX_B) app_stack_pointer = (uint32_t*)0x08006200;
+	if (slot == HEX_A) app_stack_pointer = (uint32_t*)0x08001200;
+	if (slot == HEX_B) app_stack_pointer = (uint32_t*)0x08004A00;
 	__asm volatile ("cpsid i" : : : "memory");
 	//switch stack
 	__asm volatile ("MSR msp, %0" : : "r" (*app_stack_pointer) : );
@@ -180,11 +180,11 @@ uint8_t validate_slot_data(int slot) {
 	int len;
 	if (slot == HEX_A) {
 		len = slot_a->size;
-		buffer = (uint8_t*)0x08004200;
+		buffer = (uint8_t*)0x08001200;
 	}
 	if (slot == HEX_B) {
 		len = slot_b->size;
-		buffer = (uint8_t*)0x08006200;
+		buffer = (uint8_t*)0x08004A00;
 	}
 
 	//check CRC
@@ -239,15 +239,15 @@ void app_flash_erase(uint8_t slot) {
 	*(uint32_t*)FLASH_KEYR = KEY2;
 
 	if (slot == HEX_A) {
-		page_start = 8;
-		page_end = 11;
+		page_start = 2;
+		page_end = 8;	//includes erasing this page
 	}
 	if (slot == HEX_B) {
-		page_start = 12;
+		page_start = 9;
 		page_end = 15;
 	}
 	//based on slot erase select pages
-	for (int page = page_start; page < page_end; page++) {
+	for (int page = page_start; page <= page_end; page++) {
 		//clear all error bits
 		*(int*)FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
 		//BSYS1 flag not set
