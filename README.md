@@ -13,11 +13,10 @@ aligned on a 512 byte address, and when i adjusted the linker script the bootloa
 
 
 # Potential Improvements
-## buffer of 500 bytes to store application flash
-currently using a buffer size of 500 bytes to hold application bytes, which is too small for the current max application size of 13824 bytes
-Possible solutions:
-* increase buffer size to 14000: this would inflate bootloader SRAM and the total microcontroller SRAM does not have enough capacity to hold that many bytes. If it could then implementing this solution is incredibly straightforward
-* read from firmware updater and flash every 500 bytes and repeat until we have transferred all the application bytes: this solution is optimal compared to the previous solution in terms of space but would require more complicated code
+## less reliance on button to trigger updates
+instead of relying on a button to trigger updates, i can attach a bluetooth module to read a specific uart sequence that triggers an update. this
+reflects reality where some devices' hardware are encased in a container that makes accessing inconvenient. by sending over bluetooth, the bootloader becomes more robust
+
 ## reduce the padding
 padding is currently used to align the vector table to 512 byte boundary. a potential solution is in the application slot, put the application flash at lower addresses and the header bytes at higher addresses since the header bytes don't require any alignment requirements.
 ![](flash_diagram.png)
