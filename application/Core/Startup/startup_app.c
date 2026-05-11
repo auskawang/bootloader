@@ -61,8 +61,6 @@ void Reset_Handler() {
 	int* dst_bss = &_sbss;
 	int* end_bss = &_ebss;
 
-	volatile int* dst_data_dup = dst_data;
-
 	//copy data from FLASH to SRAM
 	for (int* i = dst_data; i < end_data; i++) {
 		*(i) = *(src++);

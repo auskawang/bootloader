@@ -79,7 +79,7 @@ int main() {
 
 	while(1) {
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-			*((int*)USART2_TDR) = 0x67;
+			*((int*)USART2_TDR) = 0x72;
 		}
 		delay(1000);
 	}
