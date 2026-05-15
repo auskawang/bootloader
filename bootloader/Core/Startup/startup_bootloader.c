@@ -51,8 +51,9 @@ uint32_t vectors[] __attribute__((section(".vec_table")))= {
 	0,
 	0,
 	0,
-	(uint32_t)TIM14_Callback
+	0
 };
+
 
 void Reset_Handler() {
 	int* src = &_ld_data;

@@ -1,13 +1,3 @@
-/*
- * defs.h
- *
- *  Created on: Mar 28, 2026
- *      Author: auska
- */
-
-#ifndef INC_DEFS_H_
-#define INC_DEFS_H_
-
 #define RCC 0x40021000
 #define RCC_CR (RCC)
 #define RCC_IOPENR (RCC + 0x34)
@@ -22,6 +12,10 @@
 #define RCC_APBENR1_USART2EN        RCC_APBENR1_USART2EN_Msk
 
 #define RCC_AHBENR (RCC + 0x38)
+
+#define RCC_APBENR1_USART2EN_Pos    (17U)
+#define RCC_APBENR1_USART2EN_Msk    (1U << RCC_APBENR1_USART2EN_Pos)
+#define RCC_APBENR1_USART2EN        RCC_APBENR1_USART2EN_Msk
 
 #define GPIOA 0x50000000
 #define GPIOA_MODER (GPIOA + 0x00)
@@ -64,11 +58,10 @@
 #define TIM14_PSC (TIM14 + 0x28)
 #define TIM14_ARR (TIM14 + 0x2C)
 
-
-
 #define USART1 0x40013800
 #define USART1_CR1 (USART1 + 0x0)
 #define USART1_BRR (USART1 + 0xC)
+
 #define USART1_ISR (USART1 + 0x1C)
 #define USART1_ISR_TXE_POS 7
 #define USART1_ISR_TXE_Msk (1U << 7)
@@ -77,17 +70,21 @@
 #define USART2 0x40004400
 #define USART2_CR1 (USART2 + 0x0)
 #define USART2_BRR (USART2 + 0xC)
+#define USART2_RQR (USART2 + 0x18)
 #define USART2_ISR (USART2 + 0x1C)
 #define USART2_ISR_TXE_POS 7
 #define USART2_ISR_TXE_Msk (1U << USART2_ISR_TXE_POS)
-#define USART2_ISR_RXNE_POS 5
-#define USART2_ISR_RXNE_Msk (1U << USART2_ISR_RXNE_POS)
+#define USART2_ICR (USART2 + 0x20)
 #define USART2_TDR (USART2 + 0x28)
 #define USART2_RDR (USART2 + 0x24)
+#define USART2_ISR_RXNE_POS 5
+#define USART2_ISR_RXNE_Msk (1U << USART2_ISR_RXNE_POS)
 
-
-#define SHPR3 0xE000ED20
-#define NVIC_IPR4 0xE000E410
+#define CRC  0x40023000
+#define CRC_DR (CRC + 0x00)
+#define CRC_CR       (CRC + 0x08)
+#define CRC_INIT (CRC + 0x10)
+#define CRC_POL (CRC + 0x14)
 
 #define SCB_VTOR 0xE000ED08
 #define APP_FLASH_START (uint8_t*)0x08004000
@@ -99,10 +96,37 @@
 #define KEY1 0x45670123
 #define KEY2 0xCDEF89AB
 
-#define CRC  0x40023000
-#define CRC_DR (CRC + 0x00)
-#define CRC_CR       (CRC + 0x08)
-#define CRC_INIT (CRC + 0x10)
-#define CRC_POL (CRC + 0x14)
+#define SHPR3 0xE000ED20
+#define NVIC_IPR4 0xE000E410
 
-#endif /* INC_DEFS_H_ */
+#define MAGIC_BYTE_1 0xA5
+#define MAGIC_BYTE_2 0x5A
+#define MAGIC_BYTE_3 0x7E
+#define HEX_A 0x61
+#define HEX_B 0x62
+#define HEX_R 0x52
+#define HEX_ACK 0x1
+#define HEX_NACK 0x2
+
+
+#define SLOT_A_HEADER_START 0x08001000
+#define SLOT_B_HEADER_START 0x08004800
+#define SLOT_A_APP_START 0x08001200
+#define SLOT_B_APP_START 0x08004A00
+#define APP_MAX_SIZE SLOT_B_HEADER_START - SLOT_A_APP_START
+
+#define BUFFER_LEN 504
+
+#define SCB_AIRCR 0xE000ED0C
+#define SCB_AIRCR_VECTKEY (0x05FA << 16)
+#define SCB_AIRCR_SYSRESETREQ (1 << 2)
+
+typedef enum {
+    UPDATE_IDLE,          // Waiting for the first magic byte
+    UPDATE_BYTE1_FOUND,   // MAGIC_BYTE_1 matched, waiting for 2nd
+    UPDATE_BYTE2_FOUND,   // MAGIC_BYTE_2 matched, waiting for 3rd
+    UPDATE_TRIGGERED      // Full sequence detected, ready to update
+} UpdateState_t;
+#define LED_PIN 5
+
+

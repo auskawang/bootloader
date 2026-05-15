@@ -1,0 +1,4 @@
+- realized that flashing wasn't working when image was greater than 500 bytes, this was because the address of the
+second block was not aligned with 8 byte boundary
+- hardfaulting when usart2 interrupt triggered because vector table was initialized wrong
+- 

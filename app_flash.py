@@ -38,7 +38,20 @@ def run_bootloader():
     except Exception as e:
         print(f"Failed to open port: {e}")
         return
-
+    # send magic bytes
+    ser.write(bytes([0xA5]))
+    ser.write(bytes([0x5A]))
+    ser.write(bytes([0x7E]))
+    print("magic bytes sent")
+    
+    # wait for response
+    response = ser.read(1)
+    if response == ACK:
+        print("ACK received")
+    else:
+        print("ACK not received")
+        return
+        
     # send R
     ser.write(bytes([0x52]))
 
@@ -59,7 +72,7 @@ def run_bootloader():
     length = len(payload)
     length_bytes = length.to_bytes(2, byteorder='little')
     ser.write(length_bytes)
-    print(f"sent payload length of {length_bytes} bytes")
+    print(f"sent payload length of {length} bytes")
 
     # wait for payload confirmation
     response = ser.read(1)

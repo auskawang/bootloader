@@ -11,22 +11,25 @@ CC = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 
 # Common Flags
-CFLAGS = -g -c -mcpu=cortex-m0plus -mthumb -std=gnu11 -Wall -O0
+CFLAGS = -g -c -mcpu=cortex-m0plus -mthumb -std=gnu11 -Wall -O0 -ICore/Inc
 LDFLAGS = -T linker.ld -nostartfiles
 
 # Source Files
-SRCS = Core/Src/main_app.c Core/Startup/startup_app.c
+SRCS = Core/Src/main_app.c Core/Startup/startup_app.c Core/Inc/defs.h
+
+# Declare targets as PHONY to force execution every time
+.PHONY: all clean app_slot_a.bin app_slot_b.bin
 
 all: app_slot_a.bin app_slot_b.bin
 
-# Logic for Slot A
+# Logic for Slot A - Will always run due to .PHONY
 app_slot_a.bin: $(SRCS)
 	$(CC) $(CFLAGS) -DAPP_START_ADDR=0x08004010 Core/Src/main_app.c -o main_a.o
 	$(CC) $(CFLAGS) Core/Startup/startup_app.c -o startup_a.o
 	$(CC) -T linker.ld -nostartfiles -Wl,--defsym=_app_start=$(APP_A_START) -Wl,--defsym=_flash_len=$(APP_A_LEN) -Wl,-Map=slot_a.map -o app_slot_a.elf main_a.o startup_a.o
 	$(OBJCOPY) -O binary app_slot_a.elf app_slot_a.bin
 
-# Logic for Slot B
+# Logic for Slot B - Will always run due to .PHONY
 app_slot_b.bin: $(SRCS)
 	$(CC) $(CFLAGS) -DAPP_START_ADDR=0x08006010 Core/Src/main_app.c -o main_b.o
 	$(CC) $(CFLAGS) Core/Startup/startup_app.c -o startup_b.o
