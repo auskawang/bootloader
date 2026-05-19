@@ -18,8 +18,8 @@ void Error_Handler();
 
 typedef struct {
 	int crc;
-	int version;
-	int size;
+	uint32_t version;
+	uint32_t size;
 	int unused;
 } Slot;
 
@@ -188,7 +188,7 @@ uint8_t validate_slot_data(int slot) {
 		*(uint8_t*)CRC_DR = buffer[i];
 	}
 	crc_value = *(uint32_t*)CRC_DR;
-
+	if (crc_value == -1) return 0;	//cases where entire buffer is 0xFFFF
 	if (slot == HEX_A) {
 		return slot_a->crc == crc_value;
 	}

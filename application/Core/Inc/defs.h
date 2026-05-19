@@ -7,6 +7,14 @@
 #define RCC_APBENR2 (RCC + 0x40)
 #define RCC_CCIPR (RCC + 0x54)
 
+// Define RCC base address for STM32G0
+#define RCC_BASE      0x40021000
+#define RCC_CSR2      (*(volatile uint32_t *)(RCC_BASE + 0x58))
+
+// Define Bit Masks
+#define RCC_CSR2_LSION    (1 << 0)  // LSI Oscillator Enable
+#define RCC_CSR2_LSIRDY   (1 << 1)  // LSI Ready Flag
+
 #define RCC_APBENR1_USART2EN_Pos    (17U)
 #define RCC_APBENR1_USART2EN_Msk    (1U << RCC_APBENR1_USART2EN_Pos)
 #define RCC_APBENR1_USART2EN        RCC_APBENR1_USART2EN_Msk
@@ -79,6 +87,13 @@
 #define USART2_RDR (USART2 + 0x24)
 #define USART2_ISR_RXNE_POS 5
 #define USART2_ISR_RXNE_Msk (1U << USART2_ISR_RXNE_POS)
+
+#define IWDG_BASE  0x40003000
+#define IWDG_KR    (IWDG_BASE + 0x00) // Key Register
+#define IWDG_PR    (IWDG_BASE + 0x04) // Prescaler Register
+#define IWDG_RLR   (IWDG_BASE + 0x08) // Reload Register
+#define IWDG_SR    (IWDG_BASE + 0x0C) // Status Register
+#define IWDG_WINR  (IWDG_BASE + 0x10) // Window Register
 
 #define CRC  0x40023000
 #define CRC_DR (CRC + 0x00)

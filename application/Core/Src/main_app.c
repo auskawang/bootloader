@@ -29,11 +29,25 @@ int main() {
 	asm volatile ("cpsie i" : : : "memory");
 	*((int*)USART2_CR1) |= 0x20;		//enable interrupts on receiving
 	*(int*)NVIC_ISER |= 0x10000000;		//enable USART2 interrupts
+
+	//turn on LSI for IWDG
+	RCC_CSR2 |= RCC_CSR2_LSION;
+	while (!(RCC_CSR2 & RCC_CSR2_LSIRDY)) {}
+
+	//WDG
+	*(int*)IWDG_KR = 0x5555;	//unlock wdg
+	*(int*)IWDG_PR = 0x3; //PS 16 32khz clock (~4 seconds)
+	*(int*)IWDG_RLR = 0xFFF; //start value
+	*(int*)IWDG_KR = 0xCCCC; //start countdown
+
 	while(1) {
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
 			*((int*)USART2_TDR) = 0x71;
 		}
 		delay(1000);
+
+		// Refresh the watchdog counter
+		*(int*)IWDG_KR = 0xAAAA;
 		if (current_update_state == UPDATE_TRIGGERED) {
 			*((int*)USART2_CR1) &= ~0x20;	//disable receiving interrupts
 			*(int*)NVIC_ISER &= ~0x10000000;		//enable USART2 interrupts
@@ -115,7 +129,8 @@ uint8_t firmware_updater() {
 	app_flash_erase(chosen_slot);
 	//populate buffer with application data from UART
 	if (flash_new_app_data(chosen_slot, payload_len) < 0) return -1;
-
+	// Refresh the watchdog counter
+	*(int*)IWDG_KR = 0xAAAA;
 	return 0;
 }
 
