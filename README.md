@@ -1,23 +1,19 @@
-# bootloader
-
-# Issues + Fixes
-Issue: after adding header bytes for the dual image bootloader, my application code suddenly stopped functioning
-Before i had header bytes, the app code was working fine. when i added the header bytes, i saw that the application code
-wasnt printing an ASCII char every second to putty, instead it would just print 1 character.
-
-to investigate, i learned that i could load symbols so that i could debug and set breakpoints in the startup and main function of the application 
-code. i stepped through into the while loop that had a delay function and added a break into the delay function. everything was working fine until
-out of nowhere the code would just randomly jump to an invalid address. i suspected that it as some interrupt handler since the disassembly had no invalid
-address it was jumping to. when i disabled interrupts, the code no longer crashed. after consulting AI i found out that the vector table was supposed to be 
-aligned on a 512 byte address, and when i adjusted the linker script the bootloader code for that it finally ended up working
+# Dual Slot IAP Bootloader
+## Features
+- application side handles flashing of new application data, allowing for less downtime for useful work
+- ~13KB available for each application slot
+- UART driven communication between Python script (flash.py) and microcontroller for new application bytes, allowing for simple setup
+- CRC checks before application jumps to ensure data integrity
 
 
 # Potential Improvements
-## less reliance on button to trigger updates
-instead of relying on a button to trigger updates, i can attach a bluetooth module to read a specific uart sequence that triggers an update. this
-reflects reality where some devices' hardware are encased in a container that makes accessing inconvenient. by sending over bluetooth, the bootloader becomes more robust
-
-## reduce the padding
+## Watchdog Implementation
+System has a failure point where if an application unknowingly runs into a fault, there is no way for the system to reset itself to get out of this fault. Watchdog will be able to reset the system and revert back to a known working application slot
+## Wireless Implementation
+To send over UART board needs to be physically connected via a COM port which makes firmware updates inconvenient
+## Reduce the padding
 padding is currently used to align the vector table to 512 byte boundary. a potential solution is in the application slot, put the application flash at lower addresses and the header bytes at higher addresses since the header bytes don't require any alignment requirements.
+
+## Memory Boundaries
 ![](flash_diagram.png)
 ![](sram_diagram.png)
