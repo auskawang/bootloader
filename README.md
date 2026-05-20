@@ -4,6 +4,7 @@
 - ~13KB available for each application slot
 - UART driven communication between Python script (flash.py) and microcontroller for new application bytes, allowing for simple setup
 - CRC checks before application jumps to ensure data integrity
+- very lightweight as all of the code does not depend on HAL libraries
 
 
 # Potential Improvements
