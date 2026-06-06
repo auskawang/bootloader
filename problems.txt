@@ -1,4 +1,14 @@
 - realized that flashing wasn't working when image was greater than 500 bytes, this was because the address of the
 second block was not aligned with 8 byte boundary
 - hardfaulting when usart2 interrupt triggered because vector table was initialized wrong
-- 
+- implemented flash logic into app, but it is triggering hardfault (at that time i was aliasing handlers i wasn't using in the application to a default handler, making it confusing which interrupt was firing) when calling from read_uart_data(); figured this out by looking at the pending interrupts ICPR register and seeing which interrupt was firing, saw that it was because of a tim14 interrupt that i had not disabled at the bootloader. also got some clues when the problem wasn't occurring when i disabled interrupts
+
+Issue: after adding header bytes for the dual image bootloader, my application code suddenly stopped functioning
+Before i had header bytes, the app code was working fine. when i added the header bytes, i saw that the application code
+wasnt printing an ASCII char every second to putty, instead it would just print 1 character.
+
+to investigate, i learned that i could load symbols so that i could debug and set breakpoints in the startup and main function of the application 
+code. i stepped through into the while loop that had a delay function and added a break into the delay function. everything was working fine until
+out of nowhere the code would just randomly jump to an invalid address. i suspected that it as some interrupt handler since the disassembly had no invalid
+address it was jumping to. when i disabled interrupts, the code no longer crashed. after consulting AI i found out that the vector table was supposed to be 
+aligned on a 512 byte address, and when i adjusted the linker script the bootloader code for that it finally ended up working

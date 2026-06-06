@@ -49,9 +49,9 @@ uint32_t vectors[] __attribute__((section(".vec_table")))= {
 	0,
 	0,
 	0,
-	0,
-	0,
-	0
+	(uint32_t)TIM14_Callback,
+	(uint32_t)TIM14_Callback,
+	(uint32_t)TIM14_Callback
 };
 
 

@@ -8,8 +8,7 @@
 #define RCC_CCIPR (RCC + 0x54)
 
 // Define RCC base address for STM32G0
-#define RCC_BASE      0x40021000
-#define RCC_CSR2      (*(volatile uint32_t *)(RCC_BASE + 0x58))
+#define RCC_CSR2      (RCC + 0x60)
 
 // Define Bit Masks
 #define RCC_CSR2_LSION    (1 << 0)  // LSI Oscillator Enable
@@ -126,8 +125,8 @@
 
 #define SLOT_A_HEADER_START 0x08001000
 #define SLOT_B_HEADER_START 0x08004800
-#define SLOT_A_APP_START 0x08001200
-#define SLOT_B_APP_START 0x08004A00
+#define SLOT_A_APP_START 0x08001800
+#define SLOT_B_APP_START 0x08005000
 #define APP_MAX_SIZE SLOT_B_HEADER_START - SLOT_A_APP_START
 
 #define BUFFER_LEN 504

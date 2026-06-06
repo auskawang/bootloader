@@ -17,7 +17,7 @@ typedef struct {
 	int crc;
 	int version;
 	int size;
-	int unused;
+	int valid;
 } Slot;
 
 Slot* slot_a = (Slot*)SLOT_A_HEADER_START;
@@ -30,9 +30,13 @@ int main() {
 	*((int*)USART2_CR1) |= 0x20;		//enable interrupts on receiving
 	*(int*)NVIC_ISER |= 0x10000000;		//enable USART2 interrupts
 
+	//SysTick setup
+		*((int*)STK_RVR) = 0x5DB;
+		*((int*)STK_CVR) = 1;
+		*((int*)STK_CSR) |= 0x3;
 	//turn on LSI for IWDG
-	RCC_CSR2 |= RCC_CSR2_LSION;
-	while (!(RCC_CSR2 & RCC_CSR2_LSIRDY)) {}
+	*(int*)RCC_CSR2 |= RCC_CSR2_LSION;
+	while (!(*(int*)RCC_CSR2 & RCC_CSR2_LSIRDY)) {}
 
 	//WDG
 	*(int*)IWDG_KR = 0x5555;	//unlock wdg
@@ -43,6 +47,7 @@ int main() {
 	while(1) {
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
 			*((int*)USART2_TDR) = 0x71;
+			//int x = 5/0;
 		}
 		delay(1000);
 
@@ -50,13 +55,7 @@ int main() {
 		*(int*)IWDG_KR = 0xAAAA;
 		if (current_update_state == UPDATE_TRIGGERED) {
 			*((int*)USART2_CR1) &= ~0x20;	//disable receiving interrupts
-			*(int*)NVIC_ISER &= ~0x10000000;		//enable USART2 interrupts
-			//setup TIM14 for interrupt based LED blinking
-			*((int*)RCC_APBENR2) |= 0x8000; //enable tim14
-			*((int*)TIM14_DIER) |= 0x1;	//enable interrupt generation
-			*((int*)NVIC_ISER) |= 0x80000; //enable interrupt for NVIC
-			*((int*)TIM14_PSC) = 0x320; //PS of 1
-			*((int*)TIM14_ARR) = 0x258;
+			*(int*)NVIC_ISER &= ~0x10000000;		//disable USART2 interrupts
 			if (firmware_updater() == 0) {
 				*((int*)GPIOA_ODR) &= ~(1 << LED_PIN);
 				*((int*)TIM14_CR1) &= ~0x1; //stop the counter to disable tim14 interrupt
@@ -84,7 +83,12 @@ void trigger_reset(void) {
 }
 
 uint8_t firmware_updater() {
-
+	//setup TIM14 for interrupt based LED blinking
+	*((int*)RCC_APBENR2) |= 0x8000; //enable tim14
+	*((int*)TIM14_DIER) |= 0x1;	//enable interrupt generation
+	*((int*)NVIC_ISER) |= 0x80000; //enable interrupt for NVIC
+	*((int*)TIM14_PSC) = 0x320; //PS of 1
+	*((int*)TIM14_ARR) = 0x258;
 
 	int payload_len;
 	int chosen_slot;
@@ -99,15 +103,12 @@ uint8_t firmware_updater() {
 		if (slot_a->version == 0xFFFFFFFF && slot_b->version == 0xFFFFFFFF) {
 			chosen_slot = HEX_A;
 		}
-		else if (slot_a->version > slot_b->version) {
-			//covers cases where version might be FFFF (upon reset or something) or if flash write suddenly stopped
-			if (slot_a->version != slot_b->version + 1) chosen_slot = HEX_A;
-			else chosen_slot = HEX_B;
+		else if ((int)slot_a->version > (int)slot_b->version) {
+			chosen_slot = HEX_A;
 		}
 
-		else if (slot_b->version > slot_a->version) {
-			if (slot_a->version != slot_b->version + 1) chosen_slot = HEX_B;
-			chosen_slot = HEX_A;
+		else if ((int)slot_b->version > (int)slot_a->version) {
+			chosen_slot = HEX_B;
 		}
 		//send slot letter so Python file knows which binary file to send
 		send_uart_data(chosen_slot);
@@ -312,13 +313,13 @@ void flash_header_data(int chosen_slot, int len, int crc_value) {
 		slot_a->crc = crc_value;
 		slot_a->version = slot_b->version + 1;
 		slot_a->size = len;
-		slot_a->unused = 0xFFFF;
+		slot_a->valid = 0x0;
 	}
 	else {
 		slot_b->crc = crc_value;
 		slot_b->version = slot_a->version + 1;
 		slot_b->size = len;
-		slot_b->unused = 0xFFFF;
+		slot_b->valid = 0x0;
 	}
 
 	//CFGBSY flag cleared

@@ -168,9 +168,8 @@ void USART2_Handler() {
 			case UPDATE_BYTE2_FOUND:
 				if (received_byte == MAGIC_BYTE_3) {
 					current_update_state = UPDATE_TRIGGERED;
-					//update_triggered = 1; // Signal the main loop to start the update [cite: 576]
 				} else {
-					current_update_state = UPDATE_IDLE; // Reset if sequence is broken
+					current_update_state = UPDATE_IDLE;
 				}
 				break;
 
@@ -179,7 +178,6 @@ void USART2_Handler() {
 				break;
 		}
 	}
-	uint8_t received_byte = *(uint8_t*)USART2_RDR;
 }
 
 
