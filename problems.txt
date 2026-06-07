@@ -12,3 +12,13 @@ code. i stepped through into the while loop that had a delay function and added 
 out of nowhere the code would just randomly jump to an invalid address. i suspected that it as some interrupt handler since the disassembly had no invalid
 address it was jumping to. when i disabled interrupts, the code no longer crashed. after consulting AI i found out that the vector table was supposed to be 
 aligned on a 512 byte address, and when i adjusted the linker script the bootloader code for that it finally ended up working
+
+1. both app slots erased
+2. flashed valid image into slot A, CRC good
+3. application working as expected
+4. change character output and rebuild
+5. flashed this new image in app into slot B
+6. working as expected
+7. change character against and rebuild
+8. flashed into new image, should've chosen slot A, but slot B was chosen and stalled.
+9. this occurred because in the code the higher version was being erased, in this case slot B. once the micro erased slot B's application there was nothing to run, and thus why it stalled.

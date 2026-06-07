@@ -50,11 +50,13 @@ def run_bootloader():
         with open("application/app_slot_a.bin", "rb") as f:
             payload = f.read()
         print("Choosing Slot A")
-    else:
+    elif slot == b'\x62':
         with open("application/app_slot_b.bin", "rb") as f:
             payload = f.read()
         print(f"Choosing Slot B")
-
+    else:
+        print(f"Unknown slot");
+        return;
     # send payload size
     length = len(payload)
     length_bytes = length.to_bytes(2, byteorder='little')
@@ -67,7 +69,7 @@ def run_bootloader():
         print("Payload size confirmed. Starting transfer...")
     elif response == NACK:
         print("Error: Payload exceeds available flash memory.")
-        return # Exit because payload is too large [cite: 180]
+        return
     else:
         print("Error: Unknown response to length check.")
         return
@@ -83,12 +85,9 @@ def run_bootloader():
     for i in range(0, len(payload), CHUNK_SIZE):
         chunk = payload[i:i + CHUNK_SIZE]
         
-        # Note: You mentioned previously you didn't want padding, 
-        # but your current code uses it. Keeping it as per your snippet.
         if len(chunk) < CHUNK_SIZE:
             chunk = chunk.ljust(CHUNK_SIZE, b'\xFF')
 
-        # Atomic Packet: Calculate CRC for this specific chunk [cite: 85, 145]
         block_crc = crc32_mpeg2(chunk)
         crc_bytes = block_crc.to_bytes(4, byteorder='big')
 
@@ -97,9 +96,9 @@ def run_bootloader():
         while attempts < 3: 
             print(f"Sending block {i//CHUNK_SIZE} (Attempt {attempts + 1})...")
             ser.write(chunk)
-            ser.write(crc_bytes) # Send CRC immediately after data [cite: 97, 131]
+            ser.write(crc_bytes)
 
-            response = ser.read(1) # Wait for confirmation [cite: 10, 87]
+            response = ser.read(1)
 
             if response == ACK:
                 print(f"Block {i//CHUNK_SIZE} verified and flashed.")
@@ -114,9 +113,8 @@ def run_bootloader():
         
         if not success:
             print("Failed to send block after 3 attempts. Aborting.")
-            return # Exit on failure [cite: 181]
+            return
 
-    # Finalize transfer
     final_crc_bytes = golden_crc.to_bytes(4, byteorder='big') 
     ser.write(final_crc_bytes)
     print("Sent CRC of entire payload")

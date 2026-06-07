@@ -31,28 +31,28 @@ int main() {
 	*(int*)NVIC_ISER |= 0x10000000;		//enable USART2 interrupts
 
 	//SysTick setup
-		*((int*)STK_RVR) = 0x5DB;
-		*((int*)STK_CVR) = 1;
-		*((int*)STK_CSR) |= 0x3;
+		// *((int*)STK_RVR) = 0x5DB;
+		// *((int*)STK_CVR) = 1;
+		// *((int*)STK_CSR) |= 0x3;
 	//turn on LSI for IWDG
 	*(int*)RCC_CSR2 |= RCC_CSR2_LSION;
 	while (!(*(int*)RCC_CSR2 & RCC_CSR2_LSIRDY)) {}
 
 	//WDG
-	*(int*)IWDG_KR = 0x5555;	//unlock wdg
-	*(int*)IWDG_PR = 0x3; //PS 16 32khz clock (~4 seconds)
-	*(int*)IWDG_RLR = 0xFFF; //start value
-	*(int*)IWDG_KR = 0xCCCC; //start countdown
+	// *(int*)IWDG_KR = 0x5555;	//unlock wdg
+	// *(int*)IWDG_PR = 0x3; //PS 16 32khz clock (~4 seconds)
+	// *(int*)IWDG_RLR = 0xFFF; //start value
+	// *(int*)IWDG_KR = 0xCCCC; //start countdown
 
 	while(1) {
 		if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-			*((int*)USART2_TDR) = 0x71;
+			*((int*)USART2_TDR) = 0x6F;
 			//int x = 5/0;
 		}
 		delay(1000);
 
 		// Refresh the watchdog counter
-		*(int*)IWDG_KR = 0xAAAA;
+		// *(int*)IWDG_KR = 0xAAAA;
 		if (current_update_state == UPDATE_TRIGGERED) {
 			*((int*)USART2_CR1) &= ~0x20;	//disable receiving interrupts
 			*(int*)NVIC_ISER &= ~0x10000000;		//disable USART2 interrupts
@@ -100,14 +100,17 @@ uint8_t firmware_updater() {
 	send_uart_data(HEX_ACK);
 	if (read_uart_data() == HEX_R) {
 		//first boot
-		if (slot_a->version == 0xFFFFFFFF && slot_b->version == 0xFFFFFFFF) {
+		if (slot_a->version == 0xFFFFFFFF) {
 			chosen_slot = HEX_A;
 		}
-		else if ((int)slot_a->version > (int)slot_b->version) {
+		else if (slot_b->version == 0xFFFFFFFF)
+			chosen_slot = HEX_B;
+		//earlier version should be erased first
+		else if ((int)slot_a->version < (int)slot_b->version) {
 			chosen_slot = HEX_A;
 		}
 
-		else if ((int)slot_b->version > (int)slot_a->version) {
+		else if ((int)slot_b->version < (int)slot_a->version) {
 			chosen_slot = HEX_B;
 		}
 		//send slot letter so Python file knows which binary file to send
