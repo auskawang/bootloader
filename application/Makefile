@@ -11,11 +11,11 @@ CC = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 
 # Common Flags
-CFLAGS = -g -c -mcpu=cortex-m0plus -mthumb -std=gnu11 -Wall -O0 -ICore/Inc
+CFLAGS = -g -c -mcpu=cortex-m0plus -mthumb -std=gnu11 -Wall -O0 -I../common -ICore/Inc
 LDFLAGS = -T linker.ld -nostartfiles
 
 # Source Files
-SRCS = Core/Src/main_app.c Core/Startup/startup_app.c Core/Inc/defs.h
+SRCS = Core/Src/main_app.c Core/Startup/startup_app.c ../common/defs.h
 
 # Declare targets as PHONY to force execution every time
 .PHONY: all clean app_slot_a.bin app_slot_b.bin
