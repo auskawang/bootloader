@@ -33,44 +33,44 @@ int need_update = 0;
 
 int main() {
 	//configure onboard button as input (PC13)
-	*((int*)RCC_IOPENR) |= 0x4;
-	*((int*)GPIOC_MODER) &= ~(0x3 << (2 * BUTTON_PIN));
+	RCC_IOPENR |= 0x4;
+	GPIOC_MODER &= ~(0x3 << (2 * BUTTON_PIN));
 
 	//configure onboard led (PA5)
-	*((int*)RCC_IOPENR) |= 0x1;
-	*((int*)GPIOA_MODER) &= ~(0x3 << (2 * LED_PIN));
-	*((int*)GPIOA_MODER) |= 0x1 << (2 * LED_PIN);
+	RCC_IOPENR |= 0x1;
+	GPIOA_MODER &= ~(0x3 << (2 * LED_PIN));
+	GPIOA_MODER |= 0x1 << (2 * LED_PIN);
 
 	//SysTick setup
-	*((int*)STK_RVR) = 0x5DB;
-	*((int*)STK_CVR) = 1;
-	*((int*)STK_CSR) |= 0x3;
+	STK_RVR = 0x5DB;
+	STK_CVR = 1;
+	STK_CSR |= 0x3;
 
 
 
 	//VCP USART2 setup
-	*((int*)RCC_IOPENR) |= 0x1;
-	*((int*)RCC_APBENR1) |= RCC_APBENR1_USART2EN; 	//enable apb clock for usart2 (12mhz)
+	RCC_IOPENR |= 0x1;
+	RCC_APBENR1 |= RCC_APBENR1_USART2EN; 	//enable apb clock for usart2 (12mhz)
 										//program M bits in usart_cr1 (reset value)
-	*((int*)USART2_BRR) = 0x4E2; 		//9600 set baud rate (12000000 (input clock) / 9600 (desired baud)) p.762
-	*((int*)USART2_CR1) |= 0x1; 		//enable usart
-	*((int*)USART2_CR1) |= 0xc;			//enable usart transmitter and receiver
+	USART2_BRR = 0x4E2; 		//9600 set baud rate (12000000 (input clock) / 9600 (desired baud)) p.762
+	USART2_CR1 |= 0x1; 		//enable usart
+	USART2_CR1 |= 0xc;			//enable usart transmitter and receiver
 
 
-	*((int*)GPIOA_MODER) &= ~(0xF << 4);   // clear pa2, pa3  p187
-	*((int*)GPIOA_MODER) |=  (0xA << 4);   // AF mode pa2, pa3
-	*((int*)GPIOA_AFRL) |= 0x1 << 8;		//afsel2 = 0001 p191
-	*((int*)GPIOA_AFRL) |= 0x1 << 12;    //afsel3 = 0001
+	GPIOA_MODER &= ~(0xF << 4);   // clear pa2, pa3  p187
+	GPIOA_MODER |=  (0xA << 4);   // AF mode pa2, pa3
+	GPIOA_AFRL |= 0x1 << 8;		//afsel2 = 0001 p191
+	GPIOA_AFRL |= 0x1 << 12;    //afsel3 = 0001
 
 	//button press check
-	if ((slot_a->commit != 0x0 && slot_b->commit != 0x0) || (*((int*)GPIOC_IDR) & (1U << 13)) == 0) {
+	if ((slot_a->commit != 0x0 && slot_b->commit != 0x0) || (GPIOC_IDR & (1U << 13)) == 0) {
 		firmware_update();
 	}
 
 	//check for watchdog reset
-	if (*(int*)RCC_CSR2 & (1 << 29)) {
+	if (RCC_CSR2 & (1 << 29)) {
 		//remove flag
-		*(int*)RCC_CSR2 |= 1 << 23;
+		RCC_CSR2 |= 1 << 23;
 		//both slots have valid metadata
 		if (slot_a->commit == 0x0 && slot_b->commit == 0x0) {
 			//erase header of slot that was running
@@ -87,7 +87,7 @@ int main() {
 		//reset or display useful information then reset
 		app_header_erase(HEX_A);
 		app_header_erase(HEX_B);
-		*(int*)SCB_AIRCR = SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
+		SCB_AIRCR = SCB_AIRCR_VECTKEY | SCB_AIRCR_SYSRESETREQ;
 	}
 
 
@@ -118,19 +118,19 @@ int main() {
 
 void firmware_update() {
 	//setup TIM14 for interrupt based LED blinking
-	*((int*)RCC_APBENR2) |= 0x8000; //enable tim14
-	*((int*)TIM14_DIER) |= 0x1;	//enable interrupt generation
-	*((int*)NVIC_ISER) |= 0x80000; //enable interrupt for NVIC
-	*((int*)TIM14_PSC) = 0x320; //PS of 1
-	*((int*)TIM14_ARR) = 0x258;
+	RCC_APBENR2 |= 0x8000; //enable tim14
+	TIM14_DIER |= 0x1;	//enable interrupt generation
+	NVIC_ISER |= 0x80000; //enable interrupt for NVIC
+	TIM14_PSC = 0x320; //PS of 1
+	TIM14_ARR = 0x258;
 
 	int payload_len;
 	int chosen_slot;
-	*((int*)TIM14_CR1) |= 0x1; //start the counter to trigger tim14 interrupt
+	TIM14_CR1 |= 0x1; //start the counter to trigger tim14 interrupt
 
 	//enable CRC
-	*(int*)RCC_AHBENR |= (1U << 12);
-	*(volatile uint32_t*)CRC_CR = (1U << 0);
+	RCC_AHBENR |= (1U << 12);
+	CRC_CR = (1U << 0);
 
 	if (read_uart_data() == HEX_R) {
 		//first boot
@@ -164,9 +164,9 @@ void firmware_update() {
 	app_flash_erase(chosen_slot);
 	//populate buffer with application data from UART
 	if (flash_new_app_data(chosen_slot, payload_len) < 0) Error_Handler();
-	*((int*)GPIOA_ODR) &= ~(1 << LED_PIN);
+	GPIOA_ODR &= ~(1 << LED_PIN);
 	need_update = 0;
-	*((int*)TIM14_CR1) &= ~0x1; //stop the counter to disable tim14 interrupt
+	TIM14_CR1 &= ~0x1; //stop the counter to disable tim14 interrupt
 }
 void app_header_erase(int slot) {
 	int page;
@@ -176,35 +176,35 @@ void app_header_erase(int slot) {
 	else page = 9;
 
 		//unlock flash
-		*(uint32_t*)FLASH_KEYR = KEY1;
-		*(uint32_t*)FLASH_KEYR = KEY2;
+		FLASH_KEYR = KEY1;
+		FLASH_KEYR = KEY2;
 
 		//based on slot erase select pages
 			//clear all error bits
-			*(int*)FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
+			FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
 			//BSYS1 flag not set
-			while (((*(int*)FLASH_SR) & 0x10000) != 0) {};
+			while ((FLASH_SR & 0x10000) != 0) {};
 
 			//clear all error programming flags
-			while (((*(int*)FLASH_SR) & 0x10) != 0) {};
+			while ((FLASH_SR & 0x10) != 0) {};
 
 			//CFGBSY flag cleared
-			while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+			while ((FLASH_SR & 0x40000) != 0) {};
 
-			*(int*)FLASH_CR |= 0x2;
-			*(int*)FLASH_CR &= ~(0x7F << 3);
-			*(int*)FLASH_CR |= (page << 3);
+			FLASH_CR |= 0x2;
+			FLASH_CR &= ~(0x7F << 3);
+			FLASH_CR |= (page << 3);
 
 			//start
-			*(int*)FLASH_CR |= 0x10000;
+			FLASH_CR |= 0x10000;
 
 			//wait for CFGBSY to clear
-			while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+			while ((FLASH_SR & 0x40000) != 0) {};
 
 		//disable PE
-		*(int*)FLASH_CR &= ~0x2;
+		FLASH_CR &= ~0x2;
 		//lock flash
-		*(uint32_t*)FLASH_CR |= (1U << 31);
+		FLASH_CR |= (1U << 31);
 }
 void jump_to_slot(int slot) {
 	uint32_t* app_stack_pointer;
@@ -214,7 +214,7 @@ void jump_to_slot(int slot) {
 	//switch stack
 	__asm volatile ("MSR msp, %0" : : "r" (*app_stack_pointer) : );
 	//switch vector tables
-	*(uint32_t*)SCB_VTOR = (uint32_t)app_stack_pointer;
+	SCB_VTOR = (uint32_t)app_stack_pointer;
 	//jump to app reset handler
 	uint32_t jump_address = *(volatile uint32_t*)(app_stack_pointer + 1);
 
@@ -224,14 +224,14 @@ void jump_to_slot(int slot) {
 }
 
 void send_uart_data(uint8_t data) {
-	if (*((int*)USART2_ISR) & USART2_ISR_TXE_Msk) {
-		*((int*)USART2_TDR) = data;
+	if (USART2_ISR & USART2_ISR_TXE_Msk) {
+		USART2_TDR = data;
 	}
 }
 
 uint8_t read_uart_data() {
-	while ((*((int*)USART2_ISR) & USART2_ISR_RXNE_Msk) == 0) {}
-	return *((uint8_t*)USART2_RDR);
+	while ((USART2_ISR & USART2_ISR_RXNE_Msk) == 0) {}
+	return USART2_RDR;
 }
 
 uint8_t validate_slot_data(int slot) {
@@ -248,13 +248,13 @@ uint8_t validate_slot_data(int slot) {
 
 	//check CRC
 	//enable CRC
-	*(int*)RCC_AHBENR |= (1U << 12);
-	*(volatile uint32_t*)CRC_CR = (1U << 0);
+	RCC_AHBENR |= (1U << 12);
+	CRC_CR = (1U << 0);
 
 	for (int i = 0; i < len; i++) {
-		*(uint8_t*)CRC_DR = buffer[i];
+		CRC_DR8 = buffer[i];
 	}
-	crc_value = *(uint32_t*)CRC_DR;
+	crc_value = CRC_DR;
 	if (crc_value == -1) return 0;	//cases where entire buffer is 0xFFFF
 	if (slot == HEX_A) {
 		return slot_a->crc == crc_value;
@@ -265,23 +265,23 @@ uint8_t validate_slot_data(int slot) {
 
 void flash_header_data(int chosen_slot, int len, int crc_value) {
 	//unlock flash
-	*(uint32_t*)FLASH_KEYR = KEY1;
-	*(uint32_t*)FLASH_KEYR = KEY2;
+	FLASH_KEYR = KEY1;
+	FLASH_KEYR = KEY2;
 
 	//BSYS1 flag not set
-	while (((*(int*)FLASH_SR) & 0x10000) != 0) {};
+	while ((FLASH_SR & 0x10000) != 0) {};
 
 	//clear all error programming flags
-	while (((*(int*)FLASH_SR) & 0x10) != 0) {};
+	while ((FLASH_SR & 0x10) != 0) {};
 
 	//CFGBSY flag cleared
-	while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+	while ((FLASH_SR & 0x40000) != 0) {};
 
 	//enable PG
-	*(int*)FLASH_CR |= 0x1;
+	FLASH_CR |= 0x1;
 
 	//clear all error bits
-	*(int*)FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
+	FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
 
 	if (chosen_slot == HEX_A) {
 		slot_a->crc = crc_value;
@@ -297,16 +297,16 @@ void flash_header_data(int chosen_slot, int len, int crc_value) {
 	}
 
 	//CFGBSY flag cleared
-	while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+	while ((FLASH_SR & 0x40000) != 0) {};
 
 	//clear EOP flag
-	*(int*)FLASH_SR |= 0x1;
+	FLASH_SR |= 0x1;
 
 	//clear PG
-	*(int*)FLASH_CR &= ~0x1;
+	FLASH_CR &= ~0x1;
 
 	//lock flash
-	*(uint32_t*)FLASH_CR |= (1U << 31);
+	FLASH_CR |= (1U << 31);
 }
 
 uint8_t flash_new_app_data(uint32_t chosen_slot, int total_len) {
@@ -332,11 +332,11 @@ uint8_t flash_new_app_data(uint32_t chosen_slot, int total_len) {
 		uint32_t server_crc_val = (server_crc_bytes[0] << 24) | (server_crc_bytes[1] << 16) |
 								  (server_crc_bytes[2] << 8)  | (server_crc_bytes[3]);
 
-		*(uint32_t*)CRC_CR |= 0x1;
+		CRC_CR |= 0x1;
 		for (int i = 0; i < chunk_size; i++) {
-			*(uint8_t*)CRC_DR = buffer[i];
+			CRC_DR8 = buffer[i];
 		}
-		uint32_t local_crc_val = *(uint32_t*)CRC_DR;
+		uint32_t local_crc_val = CRC_DR;
 
 		if (local_crc_val == server_crc_val) {
 			app_flash_write(current_flash_addr, buffer, chunk_size);
@@ -362,8 +362,8 @@ uint8_t flash_new_app_data(uint32_t chosen_slot, int total_len) {
 void app_flash_erase(uint8_t slot) {
 	int page_start, page_end;
 	//unlock flash
-	*(uint32_t*)FLASH_KEYR = KEY1;
-	*(uint32_t*)FLASH_KEYR = KEY2;
+	FLASH_KEYR = KEY1;
+	FLASH_KEYR = KEY2;
 
 	if (slot == HEX_A) {
 		page_start = 2;
@@ -376,55 +376,55 @@ void app_flash_erase(uint8_t slot) {
 	//based on slot erase select pages
 	for (int page = page_start; page <= page_end; page++) {
 		//clear all error bits
-		*(int*)FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
+		FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
 		//BSYS1 flag not set
-		while (((*(int*)FLASH_SR) & 0x10000) != 0) {};
+		while ((FLASH_SR & 0x10000) != 0) {};
 
 		//clear all error programming flags
-		while (((*(int*)FLASH_SR) & 0x10) != 0) {};
+		while ((FLASH_SR & 0x10) != 0) {};
 
 		//CFGBSY flag cleared
-		while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+		while ((FLASH_SR & 0x40000) != 0) {};
 
-		*(int*)FLASH_CR |= 0x2;
-		*(int*)FLASH_CR &= ~(0x7F << 3);
-		*(int*)FLASH_CR |= (page << 3);
+		FLASH_CR |= 0x2;
+		FLASH_CR &= ~(0x7F << 3);
+		FLASH_CR |= (page << 3);
 
 		//start
-		*(int*)FLASH_CR |= 0x10000;
+		FLASH_CR |= 0x10000;
 
 		//wait for CFGBSY to clear
-		while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+		while ((FLASH_SR & 0x40000) != 0) {};
 	}
 	//disable PE
-	*(int*)FLASH_CR &= ~0x2;
+	FLASH_CR &= ~0x2;
 	//lock flash
-	*(uint32_t*)FLASH_CR |= (1U << 31);
+	FLASH_CR |= (1U << 31);
 }
 
 void app_flash_write(uint32_t start_address, uint8_t* buffer, int len) {
 	//unlock flash
-	*(uint32_t*)FLASH_KEYR = KEY1;
-	*(uint32_t*)FLASH_KEYR = KEY2;
+	FLASH_KEYR = KEY1;
+	FLASH_KEYR = KEY2;
 
 	//BSYS1 flag not set
-	while (((*(int*)FLASH_SR) & 0x10000) != 0) {};
+	while ((FLASH_SR & 0x10000) != 0) {};
 
 	//clear all error programming flags
-	while (((*(int*)FLASH_SR) & 0x10) != 0) {};
+	while ((FLASH_SR & 0x10) != 0) {};
 
 	//CFGBSY flag cleared
-	while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+	while ((FLASH_SR & 0x40000) != 0) {};
 
 	//enable PG
-	*(int*)FLASH_CR |= 0x1;
+	FLASH_CR |= 0x1;
 
 	uint32_t* flash_itr = (uint32_t*)start_address;
 	uint32_t* buffer_itr = (uint32_t*)buffer;
 
 	for (int i = 0; i < len / 4; i+=2) {
 		//clear all error bits
-		*(int*)FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
+		FLASH_SR |= (1 << 9 | 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1);
 
 		*(flash_itr + i) = *(buffer_itr + i);
 		if (i + 1 < len / 4)
@@ -433,31 +433,31 @@ void app_flash_write(uint32_t start_address, uint8_t* buffer, int len) {
 			*(flash_itr + i + 1) = 0xFFFFFFFF;
 
 		//CFGBSY flag cleared
-		while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+		while ((FLASH_SR & 0x40000) != 0) {};
 
 		//clear EOP flag
-		*(int*)FLASH_SR |= 0x1;
+		FLASH_SR |= 0x1;
 	}
 
 	//CFGBSY flag cleared
-	while (((*(int*)FLASH_SR) & 0x40000) != 0) {};
+	while ((FLASH_SR & 0x40000) != 0) {};
 
 	//clear EOP flag
-	*(int*)FLASH_SR |= 0x1;
+	FLASH_SR |= 0x1;
 
 	//clear PG
-	*(int*)FLASH_CR &= ~0x1;
+	FLASH_CR &= ~0x1;
 
 	//lock flash
-	*(uint32_t*)FLASH_CR |= (1U << 31);
+	FLASH_CR |= (1U << 31);
 }
 
 //called every 5.46ms
 void TIM14_Callback() {
-	*((int*)GPIOA_ODR) ^= 0x1 << LED_PIN;
+	GPIOA_ODR ^= 0x1 << LED_PIN;
 
 	//clear interrupt flags
-	*((int*)TIM14_SR) &= ~0x3;
+	TIM14_SR &= ~0x3;
 }
 
 void Error_Handler() {
